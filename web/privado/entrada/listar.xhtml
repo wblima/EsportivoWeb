@@ -1,0 +1,259 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+    <ui:composition template="/templates/template.xhtml">
+        <ui:define name="titulo">Manutenção de Entradas</ui:define>
+        <ui:define name="conteudo">
+            <h:form id="formListagem">
+                <p:growl/>
+                <p:messages/>           
+                <div align="center">
+                    <p:panelGrid columns="1">
+                        <f:facet name="header">  
+                            Filtro Ordenação e Paginação 
+                        </f:facet>                          
+                        <p:column  colspan="13" rowspan="1">     
+                            <p:commandButton actionListener="#{controleEntrada.novo()}"
+                                             value="Novo" oncomplete="PF('dlg').show();"
+                                             update=":formEdicao" icon="ui-icon-plus"/>                                                        
+                            <h:outputLabel for="ordem" value="Ordem" />     
+                            <h:selectOneMenu id="ordem" 
+                                             value="#{controleEntrada.dao.currentOrder}"
+                                             converter="#{controleEntrada.dao.converterOrder}">
+                                <f:selectItems value="#{controleEntrada.dao.listOrder}" />
+                                <p:ajax update="formListagem" 
+                                        listener="#{controleEntrada.listar()}"/>
+                            </h:selectOneMenu>                            
+                            <h:outputLabel for="maximoObjetos" value="Máximo de objetos" />
+                            <p:inputText id="maximoObjetos"  
+                                         value="#{controleEntrada.dao.maxObjects}" size="2"
+                                         onkeydown="Mascara(this, Integer);"
+                                         onkeypress="Mascara(this, Integer);"
+                                         onkeyup="Mascara(this, Integer);">
+                                <p:ajax update="tabela"
+                                        listener="#{controleEntrada.listar()}" event="keyup"/>                          
+                            </p:inputText>                      
+                            <h:outputLabel for="filtro" value="Filtro" />
+                            <p:inputText id="filtro" placeholder="Digite o filtro"
+                                         value="#{controleEntrada.dao.filter}" >
+                                <p:ajax update="tabela" 
+                                        listener="#{controleEntrada.listar()}" event="keyup"/>                            
+                            </p:inputText>
+                            <p:commandButton id="btnFiltrar" update="formListagem" 
+                                             actionListener="#{controleEntrada.listar()}" icon="ui-icon-search" />  
+                            <p:commandButton id="btnPrimeiro" update="formListagem" 
+                                             actionListener="#{controleEntrada.dao.first()}" icon="ui-icon-seek-start"/>  
+                            <p:commandButton id="btnAnterior" update="formListagem" 
+                                             actionListener="#{controleEntrada.dao.previous()}" icon="ui-icon-seek-prev"/>  
+                            <p:commandButton  id="btnProximo" update="formListagem" 
+                                              actionListener="#{controleEntrada.dao.next()}" icon="ui-icon-seek-next"/>  
+                            <p:commandButton id="btnUltimo" update="formListagem" 
+                                             actionListener="#{controleEntrada.dao.last()}" icon="ui-icon-seek-end" /> 
+                        </p:column>  
+                    </p:panelGrid>                     
+                </div><!--Filtros, ordenação e paginação  -->             
+                <p:dataTable value="#{controleEntrada.dao.listObjects()}" var="obj"
+                             emptyMessage="Nenhum registro encontrado" id="tabela">
+                   <p:column headerText="ID">
+                    <p:outputLabel value="#{obj.id}"/>
+                </p:column>
+                <p:column headerText="Data">
+                    <p:outputLabel value="#{obj.data}">
+                        <f:converter converterId="converterCalendar"/>
+                    </p:outputLabel>
+                </p:column>
+                <p:column headerText="Valor">
+                    <p:outputLabel value="#{obj.valor}">
+                        <f:convertNumber pattern="R$ #0.00"/>
+                    </p:outputLabel>
+                </p:column>
+                <p:column headerText="Fornecedor">
+                    <p:outputLabel value="#{obj.fornecedor.nome}"/>
+                </p:column>
+                    <p:column headerText="Ações">
+                        <div align="center">
+                            <p:commandButton actionListener="#{controleEntrada.editar(obj.id)}"
+                                             icon="ui-icon-pencil" id="btnEditar"
+                                             update=":formEdicao"
+                                             oncomplete="PF('dlg').show();"/>
+                            <p:commandButton
+                                actionListener="#{controleEntrada.remover(obj.id)}"
+                                icon="ui-icon-trash" id="btnExcluir"
+                                update=":formListagem"
+                                onclick="if (!confirm('Confirma a exclusão do objeto?'))
+                                            return false"/>
+                            <p:tooltip for="btnEditar" value="Editar registro"/>
+                            <p:tooltip for="btnExcluir" value="Excluir registro" showEffect="explode"/>
+                        </div> <!--Botões EDITAR e REMOVER -->
+                    </p:column>
+                    <f:facet name="footer">  
+                        <h:outputLabel value="#{controleEntrada.dao.navigationMessage}" />
+                    </f:facet>                  
+                </p:dataTable>            
+            </h:form>            
+        </ui:define>
+
+        <ui:define name="dialogos">     
+            <p:dialog header="Edição" widgetVar="dlg" resizable="false" modal="true">
+                <h:form id="formEdicao">
+                    <p:messages/>
+                    <p:tabView id="tab">
+                        <p:tab title="Dados" titletip="Dados principais">
+                    <p:panelGrid columns="2">
+                        <f:facet name="footer">
+                            <div align="center">
+                                <p:commandButton
+                                    value="Salvar" icon="ui-icon-disk"
+                                    actionListener="#{controleEntrada.salvar()}"
+                                    update=":formListagem :formEdicao"
+                                    oncomplete="if(!args.validationFailed){PF('dlg').hide();}"/>
+                            </div>
+                        </f:facet>
+                        <p:outputLabel value="ID" for="txtId"/>
+                    <p:inputText value="#{controleEntrada.objeto.id}" readonly="true"
+                                 size="10" id="txtId"/>
+
+                    <p:outputLabel value="Data" for="txtData"/>
+                    <p:calendar value="#{controleEntrada.objeto.data}"  id="txtData">
+                        <f:converter converterId="converterCalendar"/>
+                    </p:calendar>
+
+                    <p:outputLabel value="Valor" for="txtValor"/>
+                    <p:inputText value="#{controleEntrada.objeto.valor}"  id="txtValor" 
+                                 size="50" maxlength="50"/>
+
+                    <p:outputLabel value="Fornecedor" for="txtFornecedor"/>
+                    <p:selectOneMenu value="#{controleEntrada.objeto.fornecedor}"
+                                     id="txtFornecedor">  
+                        <f:converter converterId="converterFornecedor"/>
+                        <f:selectItem noSelectionOption="true"
+                                      itemLabel="Selecione um registro"/>
+                        <f:selectItems value="#{controleFornecedor.dao.listObjects}"
+                                       var="e" itemLabel="#{e.nome}"/>
+                    </p:selectOneMenu>
+                        
+                        
+                    </p:panelGrid>
+                        </p:tab>
+                        <p:tab title="EntradaItens" titletip="EntradaItens">
+                            <p:dataTable value="#{controleEntrada.objeto.entradaItens}" 
+                                         var="tel" rowIndexVar="idex" id="listaEntradaItens">
+                                <f:facet name="header">
+                                    <p:commandButton value="Novo Entrada Itens" actionListener="#{controleEntrada.novoEntradaItens()}"
+                                                 update=":formEntradaItens" icon="ui-icon-plus"
+                                                 id="btnNovoEntradaItens" process="btnNovoEntradaItens"
+                                                 oncomplete="PF('dlgEntradaItens').show();"/>
+                            </f:facet>
+                                <p:column headerText="ID">
+                                    <p:outputLabel value="#{tel.id}"/>
+                                </p:column>
+                                <p:column headerText="Quantidade">
+                                    <p:outputLabel value="#{tel.quatidade}">
+                                    </p:outputLabel>
+                                </p:column>
+                                <p:column headerText="Valor Unitario">
+                                    <p:outputLabel value="#{tel.valorUnitario}">
+                                        <f:convertNumber pattern="R$ #0.00"/>
+                                    </p:outputLabel>
+                                </p:column>
+                                <p:column headerText="Valor Total">
+                                    <p:outputLabel value="#{tel.valorTotal}">
+                                        <f:convertNumber pattern="R$ #0.00"/>
+                                    </p:outputLabel>
+                                </p:column>
+                                <p:column headerText="Entrada">
+                                    <p:outputLabel value="#{tel.entrada.id}"/>
+                                </p:column>
+                                <p:column headerText="Produto">
+                                    <p:outputLabel value="#{tel.produto.nome}"/>
+                                </p:column>
+                                <p:column headerText="Ações">
+                                <div align="center">
+                                    <p:commandButton id="btnAlterarEntradaItens" icon="ui-icon-pencil"
+                                                     actionListener="#{controleEntrada.alterarEntradaItem(index)}"                                                 
+                                                     update=":formEntradaItens" 
+                                                     process="btnAlterarEntradaItens"
+                                                     oncomplete="PF('dlgEntradaItens').show();"/>                                     
+                                    <p:commandButton id="btnRemoverEntradaItens" icon="ui-icon-trash"
+                                                     actionListener="#{controleEntrada.removerEntradaItens(index)}"
+                                                     process="btnRemoverEntradaItens"
+                                                     update="listaEntradaItens :formListagem"
+                                                     onclick="if (!confirm('Confirma a exclusão do objeto?'))
+                                                                 return false"/>  
+
+                                </div>
+
+                            </p:column>
+
+                            </p:dataTable>
+                        </p:tab>
+
+                    </p:tabView>
+                </h:form>
+            </p:dialog>
+            
+            <p:dialog header="Edição de EntradaItens" widgetVar="dlgEntradaItens" resizable="false" modal="true">
+                <h:form id="formEntradaItens">
+                    <p:growl/>
+                    <p:panelGrid columns="2">
+                        <f:facet name="footer">
+                            <div align="center">
+                                <p:commandButton id="btnAdicionarEntradaItens"
+                                                 value="Salvar" icon="ui-icon-disk"
+                                                 actionListener="#{controleEntrada.salvarEntradaItens()}"
+                                                 update=":formEdicao:tab:listaEntradaItens :formEntradaItens" 
+                                                 process="txtId txtQuantidade txtValorUnitario txtValorTotal 
+                                                 txtEntrada txtProduto
+                                                 btnAdicionarEntradaItens"
+                                                 oncomplete="if(!args.validationFailed){PF('dlgEntradaItens').hide();}"/>
+                            </div>
+                        </f:facet> 
+                        <p:outputLabel value="ID" for="txtId"/>
+                        <p:inputText value="#{controleEntrada.entradaItens.id}" readonly="true"
+                                     size="10" id="txtId"/>
+
+                        <p:outputLabel value="Quantidade" for="txtQuantidade"/>
+                        <p:inputText value="#{controleEntrada.entradaItens.quatidade}"
+                                     size="10" id="txtQuantidade"/>
+
+                        <p:outputLabel value="Valor Unitario" for="txtValorUnitario"/>
+                        <p:inputText value="#{controleEntrada.entradaItens.valorUnitario}"  id="txtValorUnitario" 
+                                     size="50" maxlength="50"/>
+
+                        <p:outputLabel value="Valor Total" for="txtValorTotal"/>
+                        <p:inputText value="#{controleEntrada.entradaItens.valorTotal}"  id="txtValorTotal" 
+                                     size="50" maxlength="50"/>
+
+                        <p:outputLabel value="Entrada" for="txtEntrada"/>
+                        <p:selectOneMenu value="#{controleEntrada.entradaItens.entrada}"
+                                         id="txtEntrada">  
+                            <f:converter converterId="converterEntrada"/>
+                            <f:selectItem noSelectionOption="true"
+                                          itemLabel="Selecione um registro"/>
+                            <f:selectItems value="#{controleEntrada.dao.listObjects}"
+                                           var="e" itemLabel="#{e.fornecedor.nome}"/>
+                        </p:selectOneMenu>
+
+                        <p:outputLabel value="Produto" for="txtProduto"/>
+                        <p:selectOneMenu value="#{controleEntrada.entradaItens.produto}"
+                                         id="txtProduto">  
+                            <f:converter converterId="converterProduto"/>
+                            <f:selectItem noSelectionOption="true"
+                                          itemLabel="Selecione um registro"/>
+                            <f:selectItems value="#{controleProduto.dao.listObjects}"
+                                           var="f" itemLabel="#{f.nome}"/> 
+                        </p:selectOneMenu>
+                    </p:panelGrid>	   
+
+                </h:form>
+            </p:dialog>        
+        </ui:define>
+    </ui:composition>    
+</html>
+

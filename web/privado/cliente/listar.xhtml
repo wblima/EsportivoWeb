@@ -1,0 +1,161 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+    <ui:composition template="/templates/template.xhtml">
+        <ui:define name="titulo">Manutenção de Clientes</ui:define>
+        <ui:define name="conteudo">
+            <h:form id="formListagem">
+                <p:growl/>
+                <p:messages/>           
+                <div align="center">
+                    <p:panelGrid columns="1">
+                        <f:facet name="header">  
+                            Filtro Ordenação e Paginação 
+                        </f:facet>                          
+                        <p:column  colspan="13" rowspan="1">     
+                            <p:commandButton actionListener="#{controleCliente.novo()}"
+                                             value="Novo" oncomplete="PF('dlg').show();"
+                                             update=":formEdicao" icon="ui-icon-plus"/>                                                        
+                            <h:outputLabel for="ordem" value="Ordem" />     
+                            <h:selectOneMenu id="ordem" 
+                                             value="#{controleCliente.dao.currentOrder}"
+                                             converter="#{controleCliente.dao.converterOrder}">
+                                <f:selectItems value="#{controleCliente.dao.listOrder}" />
+                                <p:ajax update="formListagem" 
+                                        listener="#{controleCliente.listar()}"/>
+                            </h:selectOneMenu>                            
+                            <h:outputLabel for="maximoObjetos" value="Máximo de objetos" />
+                            <p:inputText id="maximoObjetos"  
+                                         value="#{controleCliente.dao.maxObjects}" size="2"
+                                         onkeydown="Mascara(this, Integer);"
+                                         onkeypress="Mascara(this, Integer);"
+                                         onkeyup="Mascara(this, Integer);">
+                                <p:ajax update="tabela"
+                                        listener="#{controleCliente.listar()}" event="keyup"/>                          
+                            </p:inputText>                      
+                            <h:outputLabel for="filtro" value="Filtro" />
+                            <p:inputText id="filtro" placeholder="Digite o filtro"
+                                         value="#{controleCliente.dao.filter}" >
+                                <p:ajax update="tabela" 
+                                        listener="#{controleCliente.listar()}" event="keyup"/>                            
+                            </p:inputText>
+                            <p:commandButton id="btnFiltrar" update="formListagem" 
+                                             actionListener="#{controleCliente.listar()}" icon="ui-icon-search" />  
+                            <p:commandButton id="btnPrimeiro" update="formListagem" 
+                                             actionListener="#{controleCliente.dao.first()}" icon="ui-icon-seek-start"/>  
+                            <p:commandButton id="btnAnterior" update="formListagem" 
+                                             actionListener="#{controleCliente.dao.previous()}" icon="ui-icon-seek-prev"/>  
+                            <p:commandButton  id="btnProximo" update="formListagem" 
+                                              actionListener="#{controleCliente.dao.next()}" icon="ui-icon-seek-next"/>  
+                            <p:commandButton id="btnUltimo" update="formListagem" 
+                                             actionListener="#{controleCliente.dao.last()}" icon="ui-icon-seek-end" /> 
+                        </p:column>  
+                    </p:panelGrid>                     
+                </div><!--Filtros, ordenação e paginação  -->             
+                <p:dataTable value="#{controleCliente.dao.listObjects}" var="obj"
+                             emptyMessage="Nenhum registro encontrado" id="tabela">
+                    <p:column headerText="ID">
+                    <p:outputLabel value="#{obj.id}"/>
+                </p:column>
+                <p:column headerText="Nome">
+                    <p:outputLabel value="#{obj.nome}"/>
+                </p:column>
+                <p:column headerText="Endereco">
+                    <p:outputLabel value="#{obj.endereco}"/>
+                </p:column>
+                <p:column headerText="Telefone">
+                    <p:outputLabel value="#{obj.telefone}"/>
+                </p:column>
+                <p:column headerText="Login">
+                    <p:outputLabel value="#{obj.login}"/>
+                </p:column>
+                <p:column headerText="CPF">
+                    <p:outputLabel value="#{obj.cpf}"/>
+                </p:column>
+                <p:column headerText="Data de Cadastro">
+                    <p:outputLabel value="#{obj.dataCadastro}">
+                        <f:converter converterId="converterCalendar"/>
+                    </p:outputLabel>
+                </p:column>
+                    <p:column headerText="Ações">
+                        <div align="center">
+                            <p:commandButton actionListener="#{controleCliente.editar(obj.id)}"
+                                             icon="ui-icon-pencil" id="btnEditar"
+                                             update=":formEdicao"
+                                             oncomplete="PF('dlg').show();"/>
+                            <p:commandButton
+                                actionListener="#{controleCliente.remover(obj.id)}"
+                                icon="ui-icon-trash" id="btnExcluir"
+                                update=":formListagem"
+                                onclick="if (!confirm('Confirma a exclusão do objeto?'))
+                                            return false"/>
+                            <p:tooltip for="btnEditar" value="Editar registro"/>
+                            <p:tooltip for="btnExcluir" value="Excluir registro" showEffect="explode"/>
+                        </div> <!--Botões EDITAR e REMOVER -->
+                    </p:column>
+                    <f:facet name="footer">  
+                        <h:outputLabel value="#{controleCliente.dao.navigationMessage}" />
+                    </f:facet>                  
+                </p:dataTable>            
+            </h:form>            
+        </ui:define>
+
+        <ui:define name="dialogos">     
+            <p:dialog header="Edição" widgetVar="dlg" resizable="false" modal="true">
+                <h:form id="formEdicao">
+                    <p:messages/>
+                    <p:panelGrid columns="2">
+                        <f:facet name="footer">
+                            <div align="center">
+                                <p:commandButton
+                                    value="Salvar" icon="ui-icon-disk"
+                                    actionListener="#{controleCliente.salvar()}"
+                                    update=":formListagem :formEdicao"
+                                    oncomplete="if(!args.validationFailed){PF('dlg').hide();}"/>
+                            </div>
+                        </f:facet>
+                        <p:outputLabel value="ID" for="txtId"/>
+                    <p:inputText value="#{controleCliente.objeto.id}" readonly="true"
+                                 size="10" id="txtId"/>
+                    
+                    <p:outputLabel value="Nome" for="txtNome"/>
+                    <p:inputText value="#{controleCliente.objeto.nome}"  id="txtNome" 
+                                 size="50" maxlength="50"/>
+                    
+                    <p:outputLabel value="Endereco" for="txtEndereco"/>
+                    <p:inputText value="#{controleCliente.objeto.endereco}"  id="txtEndereco" 
+                                 size="50" maxlength="50"/>
+                    
+                    <p:outputLabel value="Telefone" for="txtTelefone"/>
+                    <p:inputText value="#{controleCliente.objeto.telefone}"  id="txtTelefone" 
+                                 size="50" maxlength="50"/>
+                    
+                    <p:outputLabel value="Login" for="txtLogin"/>
+                    <p:inputText value="#{controleCliente.objeto.login}"  id="txtLogin" 
+                                 size="50" maxlength="50"/>
+                    
+                    <p:outputLabel value="Senha" for="txtSenha"/>
+                    <p:inputText value="#{controleCliente.objeto.senha}"  id="txtSenha" 
+                                 size="50" maxlength="50"/>
+                    
+                    <p:outputLabel value="CPF" for="txtCpf"/>
+                    <p:inputMask value="#{controleCliente.objeto.cpf}"  id="txtCpf" 
+                                 mask="999.999.999-99"/>
+                    
+                    <p:outputLabel value="Data de Cadastro" for="txtDataCadastro"/>
+                    <p:calendar value="#{controleCliente.objeto.dataCadastro}"  id="txtDataCadastro">
+                        <f:converter converterId="converterCalendar"/>
+                    </p:calendar>
+                    </p:panelGrid>
+                </h:form>
+            </p:dialog>
+        </ui:define>
+    </ui:composition>    
+</html>
+
